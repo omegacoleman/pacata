@@ -107,7 +107,12 @@ public:
 		m_headers = boost::make_shared<boost::asio::streambuf>();
 		std::ostream out(m_headers.get());
 
-		out << "HTTP " <<  status <<  " " << strstatus(status)  << "\r\n";
+		if (opts.find(avhttpd::http_options::http_version)=="HTTP/1.1")
+			out << "HTTP/1.1 ";
+		else out <<  "HTTP ";
+
+		out <<  status <<  " " << strstatus(status)  << "\r\n";
+
 		if (opts.size())
 			out  <<  opts.header_string();
 		out <<  "\r\n";
@@ -130,6 +135,14 @@ private:
 	boost::shared_ptr<boost::asio::streambuf> m_headers;
 };
 
+template<class Stream, class Handler>
+async_write_response_op<Stream, Handler>
+make_async_write_response_op(Stream & s, int status, const request_opts & opts,Handler handler)
+{
+	return async_write_response_op<Stream, Handler>(s, status, opts, handler);
+}
+
+
 template<class Stream, class ConstBufferSequence, class Handler>
 class async_write_response_with_body_op
 {
@@ -143,18 +156,10 @@ public:
 		, m_buffers(buffers)
 		, m_handler(handler)
 	{
-		m_headers = boost::make_shared<boost::asio::streambuf>();
-		std::ostream out(m_headers.get());
-
-		out << "HTTP " <<  status <<  " " << strstatus(status)  << "\r\n";
-		if (opts.size())
-			out  <<  opts.header_string();
-		out <<  "\r\n";
-
-		boost::asio::async_write(m_stream, *m_headers, *this);
+		make_async_write_response_op(m_stream, status, opts, *this);
 	};
 
-	void operator()(boost::system::error_code ec, std::size_t bytes_transferred)
+	void operator()(boost::system::error_code ec)
 	{
 		boost::asio::async_write(m_stream, m_buffers, m_handler);
 	}
@@ -181,18 +186,10 @@ public:
 		, m_streambuf(streambuf)
 		, m_handler(handler)
 	{
-		m_headers = boost::make_shared<boost::asio::streambuf>();
-		std::ostream out(m_headers.get());
-
-		out << "HTTP " <<  status <<  " " << strstatus(status)  << "\r\n";
-		if (opts.size())
-			out  <<  opts.header_string();
-		out <<  "\r\n";
-
-		boost::asio::async_write(m_stream, *m_headers, *this);
+		make_async_write_response_op(m_stream, status, opts, *this);
 	};
 
-	void operator()(boost::system::error_code ec, std::size_t bytes_transferred)
+	void operator()(boost::system::error_code ec)
 	{
 		boost::asio::async_write(m_stream, m_streambuf.data(), m_handler);
 	}
@@ -205,13 +202,6 @@ private:
 	// 这里是协程用到的变量.
 	boost::shared_ptr<boost::asio::streambuf> m_headers;
 };
-
-template<class Stream, class Handler>
-async_write_response_op<Stream, Handler>
-make_async_write_response_op(Stream & s, int status, const request_opts & opts,Handler handler)
-{
-	return async_write_response_op<Stream, Handler>(s, status, opts, handler);
-}
 
 template<class Stream, class ConstBufferSequence, class Handler>
 async_write_response_with_body_op<Stream, ConstBufferSequence, Handler>
