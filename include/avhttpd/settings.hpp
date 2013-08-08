@@ -180,7 +180,17 @@ typedef option request_opts;
 // Server, 服务器名称.
 // Content-Length, 数据内容长度.
 // Connection, 连接状态标识.
-typedef option response_opts;
+class response_opts
+	: public option
+{
+public:
+	response_opts(request_opts& req)
+	: option()
+	{
+		this->insert(http_options::http_version, req.find(http_options::http_version));
+	}
+};
+// typedef option response_opts;
 
 // 一些默认的值.
 static const int default_request_piece_num = 10;

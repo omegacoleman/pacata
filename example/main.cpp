@@ -23,16 +23,13 @@ public:
 		{
 			// print out request_opts
 			std::cout <<  m_request_opts->header_string() << std::endl;
+			avhttpd::response_opts opts(*(this->m_request_opts));
 
 			if (m_request_opts->find(avhttpd::http_options::request_uri) == "/123")
 			{
-				avhttpd::response_opts opts;
-				opts("content-length", "3");
-				opts("connection", "close");
-				opts("Content-Type", "text/plain");
 				avhttpd::async_write_response(*m_clientsocket, 200, opts, boost::asio::buffer("123", 3), *this);
 			}else
-				avhttpd::async_write_response(*m_clientsocket, 200, *this);
+				avhttpd::async_write_response(*m_clientsocket, 200, opts, *this);
 		}
 		else
 		{

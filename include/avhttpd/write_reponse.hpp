@@ -107,9 +107,7 @@ public:
 		m_headers = boost::make_shared<boost::asio::streambuf>();
 		std::ostream out(m_headers.get());
 
-		if (opts.find(avhttpd::http_options::http_version)=="HTTP/1.1")
-			out << "HTTP/1.1 ";
-		else out <<  "HTTP ";
+		out << opts.find(avhttpd::http_options::http_version) << " ";
 
 		out <<  status <<  " " << strstatus(status)  << "\r\n";
 
@@ -222,63 +220,6 @@ make_async_write_response_op(Stream & s, int status, const response_opts & opts,
 }
 
 
-}
-
-/*@}*/
-/**
- * @defgroup async_write_response avhttpd::async_write_response
- *
- * @brief Start an asynchronous operation to write a http header to a stream.
- */
-/*@{*/
-
-/// Start an asynchronous operation to write a http header to a stream
-/**
- * This function is used to asynchronously write a http header to a stream.
- * The function call always returns immediately. The asynchronous operation
- * will continue all http request header have been write or
- *
- * @li The header is too big to fit in the internal buffer.(likely not even
- *     an http response)
- *
- * @li An error occurred.
- *
- * This operation is implemented in terms of zero or more calls to the stream's
- * async_write_some function, and is known as a <em>composed operation</em>. The
- * program must ensure that the stream performs no other read operations (such
- * as async_read, the stream's async_write_some function, or any other composed
- * operations that perform reads) until this operation completes.
- *
- * If error occurres, then the data in which streambuf contain is undefined.
- * The stream is not speaking HTTP protocol, and there for the data can not be
- * trusted.
- *
- * @param s The stream from which the data is to be read. The type must support
- * the AsyncReadStream concept.
- *
- * @param status the HTTP status code
- *
- * @param opts The avhttpd::request_opts object whitch the header data is be be
- * filled into.
- *
- * @param handler The handler to be called when the read operation completes.
- * Copies will be made of the handler as required. The function signature of the
- * handler must be:
- * @code void handler(
- *   const boost::system::error_code& error, // Result of operation.
- * ); @endcode
- * Regardless of whether the asynchronous operation completes immediately or
- * not, the handler will not be invoked from within this function. Invocation of
- * the handler will be performed in a manner equivalent to using
- * boost::asio::io_service::post().
- *
- */
-
-template<class Stream, class Handler>
-void async_write_response(Stream & s, int status, Handler handler)
-{
-	response_opts opts;
-	detail::make_async_write_response_op(s, status, opts, handler);
 }
 
 
