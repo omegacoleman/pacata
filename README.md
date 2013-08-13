@@ -25,6 +25,7 @@ Pacata 鼓励使用模版技术，直接将网站逻辑嵌入会话模版类之�
 下面就是一个例子：
 
 ```c++
+
 #include <boost/asio.hpp>
 #include <pacata.hpp>
 
@@ -46,17 +47,17 @@ class ExampleRouteMap
 {
 public:
     ExampleRouteMap(){};
-    void operator()(boost::shared_ptr<pacata::session_context> context)
+    void operator()(boost::asio::io_service & io_service, boost::shared_ptr<pacata::session_context> context)
     {
         if (context->m_request_opts->find(pacata::http_options::request_uri) == "/dummy")
         {
-            {pacata::session_dummy s(context);}
+            pacata::session_dummy s(io_service, context);
         } else if (context->m_request_opts->find(pacata::http_options::request_uri) == "/wrong")
         {
             // Cause an error.
-            int* myarray= new int[0xffffffff];
+            char* myarray= new char[0x7fffffff];
         } else {
-            {pacata::session_once<Example> s(context);}
+            pacata::session_once<Example> s(io_service, context);
         }
     }
 };
@@ -67,11 +68,16 @@ int main(int argc, char **argv)
     boost::asio::ip::tcp::acceptor acceptor(io_service,
         boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 4000)
     );
-    pacata::startup_httpd<pacata::session_guard<pacata::session_route<ExampleRouteMap> > >(io_service, acceptor);
-    io_service.run();
+    pacata::startup_httpd<pacata::session_route<ExampleRouteMap> >(io_service, acceptor);
+    try
+    {
+        io_service.run();
+    } catch (std::exception e)
+    {
+        std::cerr << "Error : " << e.what() << std::endl;
+    }
     return 0;
 }
-
 ```
 
 可见，Pacata不但提供了广博的自由度，而且十分便利，易于使用。
