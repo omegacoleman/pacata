@@ -8,8 +8,8 @@
 // path LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef __AVHTTPD_SETTINGS_HPP__
-#define __AVHTTPD_SETTINGS_HPP__
+#ifndef __PACATA_SETTINGS_HPP__
+#define __PACATA_SETTINGS_HPP__
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 # pragma once
@@ -22,7 +22,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/date_time.hpp>
 
-namespace avhttpd {
+namespace pacata {
 
 // 常用有以下http选项.
 namespace http_options {
@@ -50,6 +50,7 @@ namespace http_options {
 	static const std::string accept_encoding("Accept-Encoding");
 	static const std::string transfer_encoding("Transfer-Encoding");
 	static const std::string content_encoding("Content-Encoding");
+	static const std::string server("Server");
 
 } // namespace http_options
 
@@ -137,8 +138,9 @@ public:
 		std::string str;
 		for (option_item_list::const_iterator f = m_opts.begin(); f != m_opts.end(); f++)
 		{
-			if (f->first != http_options::status_code)
-				str += (f->first + ": " + f->second + "\r\n");
+			if (! f->first.empty())
+				if (f->first[0] != '_')
+					str += (f->first + ": " + f->second + "\r\n");
 		}
 		return str;
 	}
@@ -166,7 +168,7 @@ protected:
 };
 
 // 请求时的http选项.
-// _http_version, 取值 "HTTP/1.0" / "HTTP/1.1", 默认为"HTTP/1.1".
+// http_version, 取值 "HTTP/1.0" / "HTTP/1.1", 默认为"HTTP/1.1".
 // _request_method, 取值 "GET/POST/HEAD", 默认为"GET".
 // _request_body, 请求中的body内容, 取值任意, 默认为空.
 // Host, 取值为http服务器, 默认为http服务器.
@@ -188,7 +190,10 @@ public:
 	: option()
 	{
 		this->insert(http_options::http_version, req.find(http_options::http_version));
+		this->insert(http_options::server, "Pacata");
 	}
+private:
+
 };
 // typedef option response_opts;
 
@@ -200,7 +205,24 @@ static const int default_connections_limit = 5;
 static const int default_buffer_size = 1024;
 
 
+class session_context
+{
+public:
+    session_context(boost::asio::io_service & io_service, boost::shared_ptr<boost::asio::ip::tcp::socket> clientsocket)
+        : m_io_service(io_service)
+        , m_clientsocket(clientsocket)
+        , m_request_opts(boost::make_shared<pacata::request_opts>())
+        , m_streambuf(boost::make_shared<boost::asio::streambuf>())
+        , filled(false)
+    {}
+    boost::shared_ptr<pacata::request_opts> m_request_opts;
+    boost::shared_ptr<boost::asio::streambuf> m_streambuf;
+    boost::shared_ptr<boost::asio::ip::tcp::socket> m_clientsocket;
+    bool filled;
+private:
+    boost::asio::io_service & m_io_service;
+};
 
-} // namespace avhttpd
+} // namespace pacata
 
-#endif // __AVHTTPD_SETTINGS_HPP__
+#endif // __PACATA_SETTINGS_HPP__

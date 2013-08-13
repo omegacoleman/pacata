@@ -1,87 +1,53 @@
 
-#include <iostream>
-#include <boost/make_shared.hpp>
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <avhttpd.hpp>
+#include <pacata.hpp>
 
-class session_op{
+class Example
+{
 public:
-	session_op(boost::asio::io_service & io_service, boost::shared_ptr<boost::asio::ip::tcp::socket> clientsocket)
-		: m_io_service(io_service)
-		, m_clientsocket(clientsocket)
-		, m_request_opts(boost::make_shared<avhttpd::request_opts>())
-		, m_streambuf(boost::make_shared<boost::asio::streambuf>())
-		, coro(0)
+	Example(){};
+	std::string operator()(boost::shared_ptr<pacata::session_context> context, pacata::response_opts& opts)
 	{
-		avhttpd::async_read_request(*m_clientsocket, *m_streambuf, *m_request_opts, *this);
-	}
-
-	void operator()(boost::system::error_code ec)
-	{
-		if (coro++ == 0 )
+		if (context->m_request_opts->find(pacata::http_options::request_uri) == "/hello")
 		{
-			// print out request_opts
-			std::cout <<  m_request_opts->header_string() << std::endl;
-			avhttpd::response_opts opts(*(this->m_request_opts));
-
-			if (m_request_opts->find(avhttpd::http_options::request_uri) == "/123")
-			{
-				avhttpd::async_write_response(*m_clientsocket, 200, opts, boost::asio::buffer("123", 3), *this);
-			}else
-				avhttpd::async_write_response(*m_clientsocket, 200, opts, *this);
+			return "Hello!";
 		}
-		else
-		{
-
-		}
+		return "Wow!";
 	}
-
-	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
-	{
-	}
-private:
-	boost::asio::io_service & m_io_service;
-	boost::shared_ptr<boost::asio::ip::tcp::socket> m_clientsocket;
-	boost::shared_ptr<avhttpd::request_opts> m_request_opts;
-	boost::shared_ptr<boost::asio::streambuf> m_streambuf;
-
-	int coro;
 };
 
-class async_accept_op{
+class ExampleRouteMap
+{
 public:
-	async_accept_op(boost::asio::io_service & io_service, boost::asio::ip::tcp::acceptor & acceptor)
-	  : m_io_service(io_service)
-	  , m_acceptor(acceptor)
+	ExampleRouteMap(){};
+	void operator()(boost::asio::io_service & io_service, boost::shared_ptr<pacata::session_context> context)
 	{
-		boost::shared_ptr<boost::asio::ip::tcp::socket> clientsocket
-			= boost::make_shared<boost::asio::ip::tcp::socket>(boost::ref(m_io_service));
-		m_acceptor.async_accept(*clientsocket,  boost::bind<void>(*this, _1, clientsocket));
+		if (context->m_request_opts->find(pacata::http_options::request_uri) == "/dummy")
+		{
+			pacata::session_dummy s(io_service, context);
+		} else if (context->m_request_opts->find(pacata::http_options::request_uri) == "/wrong")
+		{
+			// Cause an error.
+            char* myarray= new char[0x7fffffff];
+		} else {
+			pacata::session_once<Example> s(io_service, context);
+		}
 	}
-
-	void operator()(boost::system::error_code ec, boost::shared_ptr<boost::asio::ip::tcp::socket> clientsocket)
-	{
-		if (!ec)
-			{session_op op(m_io_service, clientsocket);}
-		{async_accept_op op(m_io_service, m_acceptor);}
-	}
-
-private:
-	boost::asio::io_service & m_io_service;
-	boost::asio::ip::tcp::acceptor & m_acceptor;
 };
 
 int main(int argc, char **argv)
 {
 	boost::asio::io_service io_service;
-
 	boost::asio::ip::tcp::acceptor acceptor(io_service,
 		boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 4000)
 	);
-
-	{async_accept_op op(io_service, acceptor);}
-
-    io_service.run();
+	pacata::startup_httpd<pacata::session_route<ExampleRouteMap> >(io_service, acceptor);
+	try
+	{
+		io_service.run();
+	} catch (std::exception e)
+	{
+		std::cerr << "Error : " << e.what() << std::endl;
+	}
     return 0;
 }

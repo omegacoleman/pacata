@@ -10,8 +10,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef __AVHTTPD_ERROR_CODEC_HPP__
-#define __AVHTTPD_ERROR_CODEC_HPP__
+#ifndef __PACATA_ERROR_CODEC_HPP__
+#define __PACATA_ERROR_CODEC_HPP__
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 # pragma once
@@ -25,7 +25,7 @@
 #define BOOST_SYSTEM_NOEXCEPT BOOST_NOEXCEPT
 #endif
 
-namespace avhttpd {
+namespace pacata {
 
 namespace detail {
 	class error_category_impl;
@@ -209,7 +209,7 @@ enum status_code{
  */
 inline boost::system::error_code make_error_code(errc_t e)
 {
-	return boost::system::error_code(static_cast<int>(e), avhttpd::error_category());
+	return boost::system::error_code(static_cast<int>(e), pacata::error_category());
 }
 
 } // namespace errc
@@ -219,7 +219,7 @@ namespace boost {
 namespace system {
 
 template <>
-struct is_error_code_enum<avhttpd::errc::errc_t>
+struct is_error_code_enum<pacata::errc::errc_t>
 {
   static const bool value = true;
 };
@@ -227,7 +227,7 @@ struct is_error_code_enum<avhttpd::errc::errc_t>
 } // namespace system
 } // namespace boost
 
-namespace avhttpd {
+namespace pacata {
 namespace detail {
 
 class error_category_impl
@@ -265,6 +265,6 @@ class error_category_impl
 };
 
 } // namespace detail
-} // namespace avhttpd
+} // namespace pacata
 
-#endif // __AVHTTPD_ERROR_CODEC_HPP__
+#endif // __PACATA_ERROR_CODEC_HPP__

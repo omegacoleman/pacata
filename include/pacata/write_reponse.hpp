@@ -4,12 +4,11 @@
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/regex.hpp>
 
 #include "error_code.hpp"
 #include "settings.hpp"
 
-namespace avhttpd {
+namespace pacata {
 namespace detail {
 
 inline const char * strstatus(int status)
@@ -107,7 +106,7 @@ public:
 		m_headers = boost::make_shared<boost::asio::streambuf>();
 		std::ostream out(m_headers.get());
 
-		out << opts.find(avhttpd::http_options::http_version) << " ";
+		out << opts.find(pacata::http_options::http_version) << " ";
 
 		out <<  status <<  " " << strstatus(status)  << "\r\n";
 
@@ -225,7 +224,7 @@ make_async_write_response_op(Stream & s, int status, const response_opts & opts,
 
 /*@}*/
 /**
- * @defgroup async_write_response avhttpd::async_write_response
+ * @defgroup async_write_response pacata::async_write_response
  *
  * @brief Start an asynchronous operation to write a http header to a stream.
  */
@@ -257,7 +256,7 @@ make_async_write_response_op(Stream & s, int status, const response_opts & opts,
  *
  * @param status the HTTP status code
  *
- * @param opts The avhttpd::request_opts object whitch the header data is be be
+ * @param opts The pacata::request_opts object whitch the header data is be be
  * filled into.
  *
  * @param handler The handler to be called when the read operation completes.
@@ -282,7 +281,7 @@ void async_write_response(Stream & s, int status, const response_opts & opts,
 
 /*@}*/
 /**
- * @defgroup async_write_response avhttpd::async_write_response
+ * @defgroup async_write_response pacata::async_write_response
  *
  * @brief Start an asynchronous operation to write a http response to a stream.
  */
@@ -314,7 +313,7 @@ void async_write_response(Stream & s, int status, const response_opts & opts,
  *
  * @param status the HTTP status code
  *
- * @param opts The avhttpd::request_opts object that caray http header
+ * @param opts The pacata::request_opts object that caray http header
  *
  * @param buffers The buffers that contains the response body
  *
@@ -346,6 +345,28 @@ void async_write_response(Stream & s, int status, const response_opts & opts,
 						const boost::asio::basic_streambuf<Allocator> & streambuf, Handler handler)
 {
 	detail::make_async_write_response_op(s, status, opts, streambuf, handler);
+}
+
+
+template<class Allocator, class Handler>
+void async_write_response_context(pacata::session_context& context, int status, const response_opts & opts,
+						const boost::asio::basic_streambuf<Allocator> & streambuf, Handler handler)
+{
+	detail::make_async_write_response_op(*(context.m_clientsocket), status, opts, streambuf, handler);
+}
+
+template<class ConstBufferSequence, class Handler>
+void async_write_response_context(session_context& context, int status, const response_opts & opts,
+						const ConstBufferSequence& buffers, Handler handler)
+{
+	detail::make_async_write_response_op(*(context.m_clientsocket), status, opts, buffers, handler);
+}
+
+template<class Handler>
+void async_write_response_context(session_context& context, int status, const response_opts & opts,
+						Handler handler)
+{
+	detail::make_async_write_response_op(*(context.m_clientsocket), status, opts, handler);
 }
 
 

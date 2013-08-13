@@ -9,7 +9,7 @@
 #include "error_code.hpp"
 #include "settings.hpp"
 
-namespace avhttpd {
+namespace pacata {
 namespace detail {
 
 template<class Stream, class Allocator, class Handler>
@@ -52,10 +52,10 @@ public:
 					errc::make_error_code(errc::malformed_request_line));
 			};
 
-			m_opts(avhttpd::http_options::request_method,
+			m_opts(pacata::http_options::request_method,
 				boost::to_upper_copy(std::string(what[1])));
 
-			m_opts(avhttpd::http_options::request_uri, what[2]);
+			m_opts(pacata::http_options::request_uri, what[2]);
 
 			if (what[3].matched)
 			{
@@ -146,7 +146,7 @@ make_async_read_request_op(Stream & s,
 
 /*@}*/
 /**
- * @defgroup async_read_request avhttpd::async_read_request
+ * @defgroup async_read_request pacata::async_read_request
  *
  * @brief Start an asynchronous operation to read a http header from a stream.
  */
@@ -181,7 +181,7 @@ make_async_read_request_op(Stream & s,
  * @param s The stream from which the data is to be read. The type must support
  * the AsyncReadStream concept.
  *
- * @param opts The avhttpd::request_opts object whitch the header data is be be
+ * @param opts The pacata::request_opts object whitch the header data is be be
  * filled into.
  *
  * @param streambuf The buffer stream that async_read_request will operat on.
@@ -207,6 +207,16 @@ void async_read_request(Stream & s,
 					request_opts & opts, Handler handler)
 {
 	detail::make_async_read_request_op(s, streambuf, opts, handler);
+}
+
+template<class Handler>
+void async_read_request_context(session_context& context, Handler handler)
+{
+	if (!context.filled)
+	{
+		detail::make_async_read_request_op(*(context.m_clientsocket), *(context.m_streambuf), *(context.m_request_opts), handler);
+		context.filled = true;
+	}
 }
 
 }
